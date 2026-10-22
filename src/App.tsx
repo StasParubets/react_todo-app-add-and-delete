@@ -120,7 +120,6 @@ export const App: React.FC = () => {
         .filter((_, index) => results[index].status === 'fulfilled')
         .map(todo => todo.id);
 
-      // Оновлюємо стейт, видаляючи лише успішно видалені елементи
       setTodos(currentTodos =>
         currentTodos.filter(todo => !successfulIds.includes(todo.id)),
       );
@@ -267,7 +266,7 @@ export const App: React.FC = () => {
                 toggleTodo={t => void toggleTodo(t)}
                 handleEditing={(e, t) => void handleEditing(e, t)}
                 handleBlur={t => void handleBlur(t)}
-                isLoading={todo.id === 0 || deletingTodoIds.includes(todo.id)} // <-- Додайте цей рядок
+                isLoading={todo.id === 0 || deletingTodoIds.includes(todo.id)}
               />
             ))}
           </section>

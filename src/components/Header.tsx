@@ -19,7 +19,7 @@ export const Header: React.FC<Props> = ({
   isAllCompleted,
   handleSelectAll,
   hasTodos,
-  isSubmitting, // <-- І сюди
+  isSubmitting,
 }) => {
   useEffect(() => {
     newTodoFieldRef.current?.focus();

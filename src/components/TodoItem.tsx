@@ -12,7 +12,7 @@ interface Props {
   toggleTodo: (todo: Todo) => void;
   handleEditing: (e: React.FormEvent<HTMLFormElement>, todo: Todo) => void;
   handleBlur: (todo: Todo) => void;
-  isLoading: boolean; // <-- Додайте сюди
+  isLoading: boolean;
 }
 
 export const TodoItem: React.FC<Props> = ({
@@ -25,72 +25,76 @@ export const TodoItem: React.FC<Props> = ({
   toggleTodo,
   handleEditing,
   handleBlur,
-  isLoading, // <-- І сюди
-}) => (
-  <div
-    data-cy="Todo"
-    className={classNames('todo', {
-      completed: todo.completed,
-      editing: isEditing,
-    })}
-  >
-    <label className="todo__status-label" htmlFor={`todo-status-${todo.id}`}>
-      <span style={{ display: 'none' }}>Toggle todo status</span>
-      <input
-        id={`todo-status-${todo.id}`}
-        data-cy="TodoStatus"
-        type="checkbox"
-        className="todo__status"
-        checked={todo.completed}
-        onChange={() => toggleTodo(todo)}
-      />
-    </label>
+  isLoading,
+}) => {
+  const handleDoubleClick = () => {
+    setEditedTodoId(todo.id);
+    setEditText(todo.title);
+  };
 
-    {isEditing ? (
-      <form onSubmit={e => handleEditing(e, todo)}>
-        <input
-          data-cy="TodoTitleField"
-          type="text"
-          className="todo__title-field"
-          placeholder="Empty todo will be deleted"
-          value={editText}
-          onChange={e => setEditText(e.target.value)}
-          onBlur={() => handleBlur(todo)}
-          autoFocus
-        />
-      </form>
-    ) : (
-      <span
-        data-cy="TodoTitle"
-        className="todo__title"
-        onDoubleClick={() => {
-          setEditedTodoId(todo.id);
-          setEditText(todo.title);
-        }}
-      >
-        {todo.title}
-      </span>
-    )}
-
-    {!isEditing && (
-      <button
-        type="button"
-        className="todo__remove"
-        data-cy="TodoDelete"
-        onClick={() => deleteTodo(todo.id)}
-      >
-        ×
-      </button>
-    )}
-
+  return (
     <div
-      data-cy="TodoLoader"
-      className={classNames('modal', 'overlay', {
-        'is-active': isLoading, // <-- Використовуйте змінну isLoading замість todo.id === 0
+      data-cy="Todo"
+      className={classNames('todo', {
+        completed: todo.completed,
+        editing: isEditing,
       })}
     >
-      <div className="modal-background has-background-white-ter" />
-      <div className="loader" />
+      <label className="todo__status-label" htmlFor={`todo-status-${todo.id}`}>
+        <span style={{ display: 'none' }}>Toggle todo status</span>
+        <input
+          id={`todo-status-${todo.id}`}
+          data-cy="TodoStatus"
+          type="checkbox"
+          className="todo__status"
+          checked={todo.completed}
+          onChange={() => toggleTodo(todo)}
+        />
+      </label>
+
+      {isEditing ? (
+        <form onSubmit={e => handleEditing(e, todo)}>
+          <input
+            data-cy="TodoTitleField"
+            type="text"
+            className="todo__title-field"
+            placeholder="Empty todo will be deleted"
+            value={editText}
+            onChange={e => setEditText(e.target.value)}
+            onBlur={() => handleBlur(todo)}
+            autoFocus
+          />
+        </form>
+      ) : (
+        <span
+          data-cy="TodoTitle"
+          className="todo__title"
+          onDoubleClick={handleDoubleClick}
+        >
+          {todo.title}
+        </span>
+      )}
+
+      {!isEditing && (
+        <button
+          type="button"
+          className="todo__remove"
+          data-cy="TodoDelete"
+          onClick={() => deleteTodo(todo.id)}
+        >
+          ×
+        </button>
+      )}
+
+      <div
+        data-cy="TodoLoader"
+        className={classNames('modal', 'overlay', {
+          'is-active': isLoading,
+        })}
+      >
+        <div className="modal-background has-background-white-ter" />
+        <div className="loader" />
+      </div>
     </div>
-  </div>
-);
+  );
+};
