@@ -12,6 +12,7 @@ interface Props {
   toggleTodo: (todo: Todo) => void;
   handleEditing: (e: React.FormEvent<HTMLFormElement>, todo: Todo) => void;
   handleBlur: (todo: Todo) => void;
+  isLoading: boolean; // <-- Додайте сюди
 }
 
 export const TodoItem: React.FC<Props> = ({
@@ -24,6 +25,7 @@ export const TodoItem: React.FC<Props> = ({
   toggleTodo,
   handleEditing,
   handleBlur,
+  isLoading, // <-- І сюди
 }) => (
   <div
     data-cy="Todo"
@@ -81,7 +83,12 @@ export const TodoItem: React.FC<Props> = ({
       </button>
     )}
 
-    <div data-cy="TodoLoader" className="modal overlay">
+    <div
+      data-cy="TodoLoader"
+      className={classNames('modal', 'overlay', {
+        'is-active': isLoading, // <-- Використовуйте змінну isLoading замість todo.id === 0
+      })}
+    >
       <div className="modal-background has-background-white-ter" />
       <div className="loader" />
     </div>

@@ -13,9 +13,11 @@ export const App: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
   const [errorMessage, setErrorMessage] = useState<ErrorType | null>(null);
   const [todos, setTodos] = useState<Todo[]>([]);
+  const [tempTodo, setTempTodo] = useState<Todo | null>(null);
   const [editedTodoId, setEditedTodoId] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
   const [filter, setFilter] = useState<FilterBy>(FilterBy.All);
+  const [deletingTodoIds, setDeletingTodoIds] = useState<number[]>([]);
 
   const newTodoFieldRef = useRef<HTMLInputElement>(null);
 
@@ -42,6 +44,8 @@ export const App: React.FC = () => {
     }
   });
 
+  const visibleTodos = tempTodo ? [...filteredTodos, tempTodo] : filteredTodos;
+
   const hasCompleted = todos.some(todo => todo.completed);
   const isAllCompleted =
     todos.length > 0 && todos.every(todo => todo.completed);
@@ -50,34 +54,56 @@ export const App: React.FC = () => {
     e.preventDefault();
     setErrorMessage(null);
 
-    if (!inputValue.trim()) {
+    const title = newTodoFieldRef.current?.value.trim() || inputValue.trim();
+
+    if (!title) {
       setErrorMessage(ErrorType.Empty);
 
       return;
     }
 
+    const newTempTodo: Todo = {
+      id: 0,
+      userId: USER_ID,
+      title,
+      completed: false,
+    };
+
+    setTempTodo(newTempTodo);
+
     try {
-      await client.post<Todo>(`/todos?userId=${USER_ID}`, {
-        title: inputValue.trim(),
+      const createdTodo = await client.post<Todo>('/todos', {
+        title,
         completed: false,
         userId: USER_ID,
       });
 
+      setTodos(currentTodos => [...currentTodos, createdTodo]);
       setInputValue('');
-      await handleTodosLoading();
+      if (newTodoFieldRef.current) {
+        newTodoFieldRef.current.value = '';
+      }
     } catch {
       setErrorMessage(ErrorType.Add);
+    } finally {
+      setTempTodo(null);
+      setTimeout(() => {
+        newTodoFieldRef.current?.focus();
+      }, 0);
     }
   };
 
   const deleteTodo = async (todoId: number) => {
     setErrorMessage(null);
+    setDeletingTodoIds(currentIds => [...currentIds, todoId]);
     try {
       await client.delete(`/todos/${todoId}`);
-      await handleTodosLoading();
+      setTodos(currentTodos => currentTodos.filter(todo => todo.id !== todoId));
       newTodoFieldRef.current?.focus();
     } catch {
       setErrorMessage(ErrorType.Delete);
+    } finally {
+      setDeletingTodoIds(currentIds => currentIds.filter(id => id !== todoId));
     }
   };
 
@@ -86,10 +112,28 @@ export const App: React.FC = () => {
     try {
       const completedTodos = todos.filter(todo => todo.completed);
 
-      await Promise.all(
+      const results = await Promise.allSettled(
         completedTodos.map(todo => client.delete(`/todos/${todo.id}`)),
       );
-      await handleTodosLoading();
+
+      const successfulIds = completedTodos
+        .filter((_, index) => results[index].status === 'fulfilled')
+        .map(todo => todo.id);
+
+      // Оновлюємо стейт, видаляючи лише успішно видалені елементи
+      setTodos(currentTodos =>
+        currentTodos.filter(todo => !successfulIds.includes(todo.id)),
+      );
+
+      const hasErrors = results.some(result => result.status === 'rejected');
+
+      if (hasErrors) {
+        setErrorMessage(ErrorType.Delete);
+      } else {
+        setTimeout(() => {
+          newTodoFieldRef.current?.focus();
+        }, 0);
+      }
     } catch {
       setErrorMessage(ErrorType.Delete);
     }
@@ -205,14 +249,15 @@ export const App: React.FC = () => {
           newTodoFieldRef={newTodoFieldRef}
           isAllCompleted={isAllCompleted}
           handleSelectAll={() => void handleSelectAll()}
-          hasTodos={todos.length > 0}
+          hasTodos={todos.length > 0 || tempTodo !== null}
+          isSubmitting={tempTodo !== null}
         />
 
-        {todos.length > 0 && (
+        {(todos.length > 0 || tempTodo !== null) && (
           <section className="todoapp__main" data-cy="TodoList">
-            {filteredTodos.map(todo => (
+            {visibleTodos.map(todo => (
               <TodoItem
-                key={todo.id}
+                key={todo.id || 'temp'}
                 todo={todo}
                 isEditing={todo.id === editedTodoId}
                 editText={editText}
@@ -222,6 +267,7 @@ export const App: React.FC = () => {
                 toggleTodo={t => void toggleTodo(t)}
                 handleEditing={(e, t) => void handleEditing(e, t)}
                 handleBlur={t => void handleBlur(t)}
+                isLoading={todo.id === 0 || deletingTodoIds.includes(todo.id)} // <-- Додайте цей рядок
               />
             ))}
           </section>

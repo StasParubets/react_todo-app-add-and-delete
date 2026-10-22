@@ -1,4 +1,4 @@
-import React from 'react';
+import { useEffect } from 'react';
 
 interface Props {
   inputValue: string;
@@ -8,6 +8,7 @@ interface Props {
   isAllCompleted: boolean;
   handleSelectAll: () => void;
   hasTodos: boolean;
+  isSubmitting: boolean; // <-- Додайте сюди
 }
 
 export const Header: React.FC<Props> = ({
@@ -18,27 +19,36 @@ export const Header: React.FC<Props> = ({
   isAllCompleted,
   handleSelectAll,
   hasTodos,
-}) => (
-  <header className="todoapp__header">
-    {hasTodos && (
-      <button
-        type="button"
-        className={`todoapp__toggle-all ${isAllCompleted ? 'active' : ''}`}
-        data-cy="ToggleAllButton"
-        onClick={handleSelectAll}
-      />
-    )}
+  isSubmitting, // <-- І сюди
+}) => {
+  useEffect(() => {
+    newTodoFieldRef.current?.focus();
+  }, [newTodoFieldRef]);
 
-    <form onSubmit={handleSubmit}>
-      <input
-        data-cy="NewTodoField"
-        type="text"
-        className="todoapp__new-todo"
-        placeholder="What needs to be done?"
-        value={inputValue}
-        onChange={e => setInputValue(e.target.value)}
-        ref={newTodoFieldRef}
-      />
-    </form>
-  </header>
-);
+  return (
+    <header className="todoapp__header">
+      {hasTodos && (
+        <button
+          type="button"
+          className={`todoapp__toggle-all ${isAllCompleted ? 'active' : ''}`}
+          data-cy="ToggleAllButton"
+          onClick={handleSelectAll}
+        />
+      )}
+
+      <form onSubmit={handleSubmit}>
+        <input
+          data-cy="NewTodoField"
+          type="text"
+          className="todoapp__new-todo"
+          placeholder="What needs to be done?"
+          value={inputValue}
+          onChange={e => setInputValue(e.target.value)}
+          ref={newTodoFieldRef}
+          disabled={isSubmitting}
+          autoFocus
+        />
+      </form>
+    </header>
+  );
+};
